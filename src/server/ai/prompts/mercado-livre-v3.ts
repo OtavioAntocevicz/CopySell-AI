@@ -43,6 +43,9 @@ EXEMPLOS_DE_FRASES_PROIBIDAS:
 - "ampla gama de trabalhos"
 - "praticidade e eficiência"
 - "produto premium"
+- "sua melhor escolha"
+- "perfeito para você"
+- "ideal para o dia a dia"
 
 SEO_DE_MARKETPLACE:
 - Priorize termos pesquisáveis.
@@ -185,11 +188,11 @@ Se a imagem estiver ruim, desfocada ou incompleta:
 
 AUTO_VALIDACAO:
 Antes de responder confirme:
-- title <= 60 caracteres
-- sem hype exagerado
-- sem especificações inventadas
-- keywords sem repetição artificial
-- bullets escaneáveis
+- title <= 60 caracteres e com termos pesquisáveis (evite títulos genéricos tipo "produto de qualidade")
+- sem hype exagerado nem frases vazias de IA
+- sem marca, modelo, voltagem ou especificação não confirmada na imagem ou nas notas do vendedor
+- keywords relevantes ao produto (sem termos genéricos de categoria soltos)
+- bullets com uma ideia cada, curtos e úteis para decisão de compra
 - descrição longa com benefícios reais (sem adjetivos proibidos)
 - JSON válido
 

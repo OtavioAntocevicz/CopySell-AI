@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { BenchmarkGuideCard } from "@/components/features/listing/BenchmarkGuideCard";
 import { ListingForm } from "@/components/features/listing/ListingForm";
 import { buttonVariants } from "@/lib/button-variants";
 import { cn } from "@/lib/utils";
@@ -142,6 +143,8 @@ export default async function NovoAnuncioPage() {
           {usage ? formatDate(usage.periodEndsAt) : "-"}.
         </p>
       ) : null}
+
+      <BenchmarkGuideCard />
 
       <Card>
         <CardHeader>

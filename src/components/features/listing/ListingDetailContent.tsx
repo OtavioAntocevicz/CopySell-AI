@@ -22,6 +22,8 @@ import {
   CopyBlock,
   ListingExportToolbar,
 } from "@/components/features/listing/ListingExportToolbar";
+import { ListingQualityFeedback } from "@/components/features/listing/ListingQualityFeedback";
+import type { QualityIssueTag } from "@/domains/listing/quality-feedback";
 
 type Props = {
   listingId: string;
@@ -31,6 +33,8 @@ type Props = {
   createdAtLabel: string;
   sellerNotes: string | null;
   initialOutput: ListingAiOutput;
+  qualityFeedbackTags?: QualityIssueTag[];
+  qualityFeedbackNotes?: string | null;
 };
 
 function linesFromArray(items: string[]): string {
@@ -94,6 +98,8 @@ export function ListingDetailContent({
   createdAtLabel,
   sellerNotes,
   initialOutput,
+  qualityFeedbackTags = [],
+  qualityFeedbackNotes = null,
 }: Props) {
   const [output, setOutput] = useState(initialOutput);
   const [editing, setEditing] = useState(false);
@@ -409,6 +415,16 @@ export function ListingDetailContent({
           </Card>
         </div>
       )}
+
+      {!editing ? (
+        <ListingQualityFeedback
+          listingId={listingId}
+          productName={productName}
+          categoryLabel={categoryLabel}
+          existingTags={qualityFeedbackTags}
+          existingNotes={qualityFeedbackNotes}
+        />
+      ) : null}
     </div>
   );
 }

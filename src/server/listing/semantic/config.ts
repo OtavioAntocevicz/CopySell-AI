@@ -41,6 +41,10 @@ export const CHATGPT_PHRASES: readonly string[] = [
   "ideal para o dia a dia",
   "sua melhor escolha",
   "nao fique de fora",
+  "produto de qualidade",
+  "excelente custo beneficio",
+  "desenvolvido para atender",
+  "solucao completa para",
 ];
 
 /**

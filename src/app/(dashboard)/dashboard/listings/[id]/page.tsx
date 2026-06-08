@@ -8,6 +8,10 @@ import { buttonVariants } from "@/lib/button-variants";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ListingDetailContent } from "@/components/features/listing/ListingDetailContent";
+import {
+  QUALITY_ISSUE_TAGS,
+  type QualityIssueTag,
+} from "@/domains/listing/quality-feedback";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -81,6 +85,20 @@ export default async function ListingDetailPage({ params }: PageProps) {
       ? sellerNotesRaw.trim()
       : null;
 
+  const { data: feedbackRow } = await supabase
+    .from("listing_quality_feedback")
+    .select("issue_tags, notes")
+    .eq("listing_id", row.id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const qualityFeedbackTags = ((feedbackRow?.issue_tags ?? []) as string[])
+    .filter((t): t is QualityIssueTag =>
+      (QUALITY_ISSUE_TAGS as readonly string[]).includes(t),
+    );
+  const qualityFeedbackNotes =
+    typeof feedbackRow?.notes === "string" ? feedbackRow.notes : null;
+
   return (
     <ListingDetailContent
       listingId={row.id}
@@ -90,6 +108,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
       createdAtLabel={new Date(row.created_at).toLocaleString("pt-BR")}
       sellerNotes={sellerNotesSaved}
       initialOutput={parsed.data}
+      qualityFeedbackTags={qualityFeedbackTags}
+      qualityFeedbackNotes={qualityFeedbackNotes}
     />
   );
 }

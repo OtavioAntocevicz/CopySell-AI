@@ -5,8 +5,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { QUALITY_ISSUE_LABELS } from "@/domains/listing/quality-feedback";
 import { requireAdmin } from "@/server/admin/require-admin";
 import { computeBehaviorInsights } from "@/server/analytics/behavior-insights";
+import { computeQualityFeedbackInsights } from "@/server/analytics/quality-feedback-insights";
 
 function RankTable({
   title,
@@ -46,14 +48,19 @@ function RankTable({
 
 export default async function AdminIaPage() {
   const { supabase } = await requireAdmin();
-  const insights = await computeBehaviorInsights(supabase);
+  const [insights, quality] = await Promise.all([
+    computeBehaviorInsights(supabase),
+    computeQualityFeedbackInsights(supabase),
+  ]);
 
   return (
     <div className="space-y-6">
       <p className="text-muted-foreground text-sm">
-        Janela: últimos {insights.windowDays} dias · Amostra: até{" "}
-        {insights.sampleEvents} eventos recentes. Métricas derivadas de{" "}
-        <code className="rounded bg-muted px-1">listing_behavior_events</code>.
+        Janela: últimos {insights.windowDays} dias · Edições: até{" "}
+        {insights.sampleEvents} eventos em{" "}
+        <code className="rounded bg-muted px-1">listing_behavior_events</code> ·
+        Avaliações manuais: {quality.sampleCount} em{" "}
+        <code className="rounded bg-muted px-1">listing_quality_feedback</code>.
       </p>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -138,6 +145,95 @@ export default async function AdminIaPage() {
                 </tbody>
               </table>
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Avaliações manuais (benchmark)</CardTitle>
+          <CardDescription>
+            Formulário &quot;Avaliar qualidade&quot; na página do anúncio. Tags com
+            3+ ocorrências sugerem ajuste de prompt.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {quality.sampleCount === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              Nenhuma avaliação ainda. Gere anúncios, marque problemas nos piores
+              casos e opcionalmente edite/salve para cruzar com as métricas acima.
+            </p>
+          ) : (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {quality.issueCounts.map((row) => (
+                  <div
+                    key={row.tag}
+                    className="rounded-lg border px-3 py-2 text-sm"
+                  >
+                    <p className="font-medium">{row.label}</p>
+                    <p className="text-muted-foreground tabular-nums">
+                      {row.count} marcação(ões)
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {quality.tuneRecommendations.length > 0 ? (
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">
+                    Candidatos a ajuste de prompt (3+ ocorrências)
+                  </p>
+                  <ul className="space-y-2 text-sm">
+                    {quality.tuneRecommendations.map((rec) => (
+                      <li
+                        key={rec.tag}
+                        className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2"
+                      >
+                        <span className="font-medium">
+                          {rec.label} ({rec.count}x)
+                        </span>
+                        <p className="text-muted-foreground mt-1">{rec.hint}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              <div>
+                <p className="mb-2 text-sm font-medium">Últimas avaliações</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-muted-foreground border-b text-left">
+                        <th className="py-2 pr-4 font-medium">Produto</th>
+                        <th className="py-2 pr-4 font-medium">Categoria</th>
+                        <th className="py-2 pr-4 font-medium">Problemas</th>
+                        <th className="py-2 font-medium">Notas</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {quality.recentFeedback.slice(0, 15).map((row) => (
+                        <tr key={row.id} className="border-b last:border-0">
+                          <td className="max-w-[160px] truncate py-2 pr-4">
+                            {row.productName}
+                          </td>
+                          <td className="py-2 pr-4">{row.category}</td>
+                          <td className="max-w-[220px] py-2 pr-4">
+                            {row.issueTags
+                              .map((t) => QUALITY_ISSUE_LABELS[t])
+                              .join("; ")}
+                          </td>
+                          <td className="text-muted-foreground max-w-[200px] truncate py-2">
+                            {row.notes ?? "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
