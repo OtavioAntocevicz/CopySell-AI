@@ -1,8 +1,10 @@
 -- =============================================================================
--- CopySell AI - schema Supabase consolidado (squash migrations 20260512-20260516).
--- MVP, planos v2, cadastro perfil, billing_requests, RPC creditos.
+-- CopySell AI - schema Supabase consolidado (deploy unico).
+-- Inclui: MVP, planos v2, cadastro perfil, billing_requests, RPC creditos,
+-- plano free com 5 geracoes/ciclo, hardening RLS de billing/uso mensal.
 --
--- Novos clones: este arquivo unico. Bases ja migradas: nao reexecutar sem plano.
+-- Novos ambientes: executar apenas este arquivo no SQL Editor do Supabase.
+-- Bases ja migradas incrementalmente: nao reexecutar sem plano de merge.
 -- =============================================================================
 
 -- ---------------------------------------------------------------------------
@@ -212,7 +214,7 @@ create or replace function public.increment_own_usage (
 )
 returns void
 language plpgsql
-security invoker
+security definer
 set search_path = public
 as $$
 declare
@@ -220,6 +222,21 @@ declare
 begin
   if uid is null then
     raise exception 'not authenticated';
+  end if;
+
+  if p_period is null or length(trim(p_period)) = 0 then
+    raise exception 'invalid period';
+  end if;
+
+  if p_generations < 0 or p_generations > 1
+    or p_images < 0 or p_images > 1
+    or p_listings < 0 or p_listings > 1
+  then
+    raise exception 'invalid increment values';
+  end if;
+
+  if p_generations = 0 and p_images = 0 and p_listings = 0 then
+    raise exception 'at least one increment required';
   end if;
 
   insert into public.user_usage_monthly as u (
@@ -238,6 +255,7 @@ begin
 end;
 $$;
 
+revoke all on function public.increment_own_usage (text, integer, integer, integer) from public;
 grant execute on function public.increment_own_usage (text, integer, integer, integer) to authenticated;
 
 create or replace function public.handle_new_user ()
@@ -408,14 +426,7 @@ create policy "user_usage_monthly_select"
   using (auth.uid() = user_id or public.is_admin ());
 
 drop policy if exists "user_usage_monthly_insert_own" on public.user_usage_monthly;
-create policy "user_usage_monthly_insert_own"
-  on public.user_usage_monthly for insert
-  with check (auth.uid() = user_id);
-
 drop policy if exists "user_usage_monthly_update_own" on public.user_usage_monthly;
-create policy "user_usage_monthly_update_own"
-  on public.user_usage_monthly for update
-  using (auth.uid() = user_id);
 
 drop policy if exists "user_usage_monthly_delete_admin" on public.user_usage_monthly;
 create policy "user_usage_monthly_delete_admin"
@@ -553,7 +564,7 @@ set
   name = 'Pro',
   description = 'Uso profissional com suporte prioritário básico.',
   limits = jsonb_build_object(
-    'monthlyGenerations', 150,
+    'monthlyGenerations', 75,
     'maxImagesPerGeneration', 3,
     'maxImageBytes', 2097152,
     'features', jsonb_build_array('ml_listing', 'export_csv', 'priority_support_basic')
@@ -566,7 +577,7 @@ set
   name = 'Business',
   description = 'Equipes e maior prioridade nas gerações.',
   limits = jsonb_build_object(
-    'monthlyGenerations', 500,
+    'monthlyGenerations', 150,
     'maxImagesPerGeneration', 5,
     'maxImageBytes', 5242880,
     'features', jsonb_build_array('ml_listing', 'export_csv', 'priority_queue', 'priority_support')
@@ -778,7 +789,7 @@ $$;
 create or replace function public.decrement_own_extra_credit ()
 returns integer
 language plpgsql
-security invoker
+security definer
 set search_path = public
 as $$
 declare
@@ -803,6 +814,7 @@ begin
 end;
 $$;
 
+revoke all on function public.decrement_own_extra_credit () from public;
 grant execute on function public.decrement_own_extra_credit () to authenticated;
 
 -- ---------------------------------------------------------------------------
@@ -890,7 +902,7 @@ $$;
 grant execute on function public.admin_add_extra_credits (uuid, integer) to authenticated;
 
 -- ---------------------------------------------------------------------------
--- credit_balances: leitura admin + update próprio (consumo via RPC invoker)
+-- credit_balances: leitura admin; mutacao apenas via RPC (decrement) ou admin
 -- ---------------------------------------------------------------------------
 drop policy if exists "credit_balances_select_admin" on public.credit_balances;
 create policy "credit_balances_select_admin"
@@ -899,11 +911,6 @@ create policy "credit_balances_select_admin"
   using (public.is_admin ());
 
 drop policy if exists "credit_balances_update_own" on public.credit_balances;
-create policy "credit_balances_update_own"
-  on public.credit_balances for update
-  to authenticated
-  using (auth.uid () = user_id)
-  with check (auth.uid () = user_id);
 
 drop policy if exists "credit_balances_update_admin" on public.credit_balances;
 create policy "credit_balances_update_admin"

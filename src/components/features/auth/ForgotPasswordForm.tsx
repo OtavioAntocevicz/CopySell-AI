@@ -1,54 +1,73 @@
 "use client";
 
-/**
- * @module src/components/features/auth/LoginForm
- * Login email/senha e OAuth via Supabase client; redirect pos-sucesso.
- */
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-export function LoginForm() {
-  const router = useRouter();
+export function ForgotPasswordForm() {
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    setInfo(null);
     setPending(true);
+
     const form = new FormData(e.currentTarget);
-    const email = String(form.get("email") ?? "");
-    const password = String(form.get("password") ?? "");
+    const email = String(form.get("email") ?? "").trim();
 
-    const supabase = createClient();
-    const { error: signErr } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    setPending(false);
-    if (signErr) {
-      setError(signErr.message);
+    if (!email) {
+      setPending(false);
+      setError("Informe seu e-mail.");
       return;
     }
-    router.push("/dashboard");
-    router.refresh();
+
+    const supabase = createClient();
+    const origin = window.location.origin;
+    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(
+      email,
+      {
+        redirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/login/reset")}`,
+      },
+    );
+
+    setPending(false);
+    if (resetErr) {
+      setError(resetErr.message);
+      return;
+    }
+
+    setInfo(
+      "Se o e-mail estiver cadastrado, você receberá um link para redefinir a senha. Verifique também a caixa de spam.",
+    );
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {error ? (
         <Alert variant="destructive">
-          <AlertTitle>Login</AlertTitle>
+          <AlertTitle>Recuperação</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
+      {info ? (
+        <Alert>
+          <AlertTitle>E-mail enviado</AlertTitle>
+          <AlertDescription>{info}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      <p className="text-muted-foreground text-sm">
+        Informe o e-mail da sua conta. Enviaremos um link para criar uma nova
+        senha.
+      </p>
+
       <div className="space-y-2">
         <Label htmlFor="email">E-mail</Label>
         <Input
@@ -60,32 +79,14 @@ export function LoginForm() {
           disabled={pending}
         />
       </div>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <Label htmlFor="password">Senha</Label>
-          <Link
-            href="/login/forgot"
-            className="text-muted-foreground text-xs underline-offset-4 hover:underline"
-          >
-            Esqueci minha senha
-          </Link>
-        </div>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          disabled={pending}
-        />
-      </div>
+
       <Button type="submit" disabled={pending} className="w-full">
-        {pending ? "Entrando…" : "Entrar"}
+        {pending ? "Enviando…" : "Enviar link de recuperação"}
       </Button>
+
       <p className="text-muted-foreground text-center text-sm">
-        Não tem conta?{" "}
-        <Link href="/signup" className="text-foreground underline">
-          Cadastre-se
+        <Link href="/login" className="text-foreground underline">
+          Voltar ao login
         </Link>
       </p>
     </form>

@@ -206,7 +206,9 @@ export function PricingPlans({
                         <span className="text-foreground font-medium">
                           {p.monthlyGenerations}
                         </span>{" "}
-                        gerações por mês de ciclo
+                        {p.id === "free"
+                          ? "gerações no período gratuito"
+                          : "gerações por mês de ciclo"}
                       </span>
                     </li>
                     <li className="text-muted-foreground flex gap-2">

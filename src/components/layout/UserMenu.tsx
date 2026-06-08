@@ -43,7 +43,7 @@ export function UserMenu({
         title={collapsed ? email : undefined}
         className={cn(
           buttonVariants({ variant: "outline", size: collapsed ? "icon" : "sm" }),
-          collapsed ? "size-9 shrink-0" : "max-w-[240px] gap-1.5",
+          collapsed ? "size-9 shrink-0" : "w-full min-w-0 max-w-full gap-1.5",
         )}
       >
         {collapsed ? (

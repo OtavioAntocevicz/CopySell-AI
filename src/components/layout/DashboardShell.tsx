@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { AppLogo } from "@/components/brand/AppLogo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/layout/UserMenu";
@@ -197,20 +198,16 @@ export function DashboardShell({
           )}
         >
           {!collapsed ? (
-            <Link
+            <AppLogo
               href="/dashboard"
-              className="text-sidebar-foreground truncate text-sm font-semibold tracking-tight"
-            >
-              CopySell AI
-            </Link>
+              className="text-sidebar-foreground truncate text-sm"
+            />
           ) : (
-            <Link
+            <AppLogo
               href="/dashboard"
-              title="CopySell AI"
-              className="text-sidebar-foreground flex size-9 items-center justify-center rounded-lg text-xs font-bold"
-            >
-              CS
-            </Link>
+              compact
+              className="text-sidebar-foreground"
+            />
           )}
           {!collapsed ? (
             <Button
@@ -291,7 +288,7 @@ export function DashboardShell({
 
         <div
           className={cn(
-            "shrink-0 space-y-2 border-t p-2",
+            "min-w-0 shrink-0 space-y-2 border-t p-2",
             collapsed && "flex flex-col items-center",
           )}
         >
@@ -322,7 +319,10 @@ export function DashboardShell({
                 </Badge>
               </div>
             ) : (
-              <Badge variant="secondary" className="max-w-full font-normal">
+              <Badge
+                variant="secondary"
+                className="block w-full max-w-full truncate font-normal"
+              >
                 {usageSummaryError || !usageSummary ? (
                   "Uso: indisponível"
                 ) : (
@@ -340,7 +340,12 @@ export function DashboardShell({
               </Badge>
             )}
           </div>
-          <div className={cn(!collapsed && "px-1")}>
+          <div
+            className={cn(
+              !collapsed && "min-w-0 w-full overflow-hidden px-1",
+              collapsed && "flex justify-center",
+            )}
+          >
             <UserMenu email={email} isAdmin={isAdmin} collapsed={collapsed} />
           </div>
         </div>

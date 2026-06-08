@@ -9,6 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { AppLogo } from "@/components/brand/AppLogo";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 import { LandingPlansSection } from "@/components/marketing/LandingPlansSection";
 import { loadPricingPlanRows } from "@/server/billing/load-pricing-plans";
 
@@ -34,7 +36,7 @@ export default async function HomePage() {
     <div className="flex flex-1 flex-col">
       <header className="border-b">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-          <span className="font-semibold tracking-tight">CopySell AI</span>
+          <AppLogo />
           <div className="flex gap-2">
             <Link
               href="/login"
@@ -104,6 +106,8 @@ export default async function HomePage() {
 
         <LandingPlansSection plans={planRows} />
       </main>
+
+      <SiteFooter />
     </div>
   );
 }

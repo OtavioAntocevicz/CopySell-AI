@@ -1,33 +1,38 @@
 # Migrations
 
-## Arquivo atual
+## Arquivo atual (deploy unico)
 
 | Arquivo | Descricao |
 |---------|-----------|
-| `supabase/migrations/20260517120000_copy_sell_schema_merged.sql` | **Squash** de todas as migrations anteriores (schema MVP + planos v2 + perfil + billing_requests + RPCs de credito + kind `support`). |
+| [`supabase/migrations/20260517120000_copy_sell_schema_merged.sql`](../../supabase/migrations/20260517120000_copy_sell_schema_merged.sql) | **Schema completo** para novos ambientes: MVP, planos v2, perfil, billing, plano free com 5 geracoes/ciclo, hardening RLS de billing/uso. |
 
-## Historico (removido do repo, conteudo fundido)
+## Como aplicar no Supabase
 
-As seguintes migrations foram **absorvidas** no arquivo merged (nao existem mais como arquivos separados):
+1. Abra o **SQL Editor** do projeto Supabase.
+2. Cole o conteudo integral do arquivo merged acima.
+3. Execute uma unica vez em ambiente novo.
 
-1. `20260512150000_copy_sell_schema` - tabelas base, RLS inicial, triggers, storage.
-2. `20260513140000_plans_billing_cycles` - status de assinatura, ciclo, atualizacao de planos, policy anon em `plans`, `handle_new_user` v2.
-3. `20260514103000_profile_registration_fields` - colunas cadastro, `handle_new_user` v3 com segmento.
-4. `20260515120000_extra_credits_billing_requests` - RPC decrement, tabela `billing_requests`.
-5. `20260516120000_admin_credits_rls_support_kind` - RPC admin credito, RLS `credit_balances`, kind `support`.
+**Ambientes ja migrados** com arquivos incrementais antigos: nao reexecute o merged inteiro sem plano; aplique apenas o diff necessario ou recrie o projeto.
 
-## Boas praticas para novos ambientes
+## Historico (absorvido no merged)
 
-- **Novo projeto Supabase**: aplicar apenas o arquivo merged apos `supabase db reset` (ou fluxo equivalente).
-- **Projeto ja migrado com arquivos antigos**: **nao** apagar linhas do historico de migrations no servidor sem plano; o merged e a fonte de verdade para **novos clones**.
+As migrations abaixo foram **fundidas** no arquivo unico e **removidas** do repositorio:
+
+| Arquivo removido | Conteudo absorvido |
+|------------------|-------------------|
+| `20260518100000_free_plan_monthly_generations_5.sql` | Plano free com `monthlyGenerations: 5` (secao de catalogo no merged) |
+| `20260608130000_rls_billing_hardening.sql` | RPCs `increment_own_usage` / `decrement_own_extra_credit` hardened; sem UPDATE direto em `credit_balances` e `user_usage_monthly` |
+
+Squash anterior (20260512-20260516) ja estava no merged base.
 
 ## Como adicionar nova migration daqui pra frente
 
-1. Crie `supabase/migrations/YYYYMMDDHHMMSS_descricao.sql`.
+1. Crie `supabase/migrations/YYYYMMDDHHMMSS_descricao.sql` **ou** atualize o merged se for ambiente sempre novo.
 2. Use idempotencia (`if not exists`, `drop policy if exists`).
-3. Documente neste arquivo a secao "Historico incremental" em formato de lista com data e proposito.
+3. Documente neste arquivo na secao "Historico incremental".
 
 ## Links
 
 - [Banco README](./README.md)
+- [Seguranca RLS](../seguranca/README.md)
 - [Manutencao: novas tabelas](../manutencao/README.md)

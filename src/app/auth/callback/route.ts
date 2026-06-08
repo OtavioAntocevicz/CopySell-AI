@@ -2,11 +2,12 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { safeInternalRedirectPath } from "@/lib/safe-redirect-path";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  const next = url.searchParams.get("next") ?? "/dashboard";
+  const next = safeInternalRedirectPath(url.searchParams.get("next"));
 
   if (!code) {
     return NextResponse.redirect(new URL("/login", url.origin));

@@ -36,4 +36,4 @@ npm run test     # Vitest
 
 ## Licenca
 
-Projeto privado (`private: true` no `package.json`).
+Software proprietario. Ver [LICENSE](./LICENSE).

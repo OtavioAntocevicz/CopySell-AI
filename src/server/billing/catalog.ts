@@ -46,9 +46,8 @@ export const PLAN_CATALOG: PlanCatalogEntry[] = [
     yearlySavingsLabel: "",
     tagline: "Experimente por 30 dias",
     bullets: [
-      "5 gerações no período gratuito",
-      "1 imagem por geração",
-      "Após o período gratuito: assine um plano ou compre créditos extras (não expiram)",
+      "Período gratuito de 30 dias",
+      "Após o trial: assine um plano ou compre créditos extras (não expiram)",
     ],
   },
   {
@@ -59,8 +58,6 @@ export const PLAN_CATALOG: PlanCatalogEntry[] = [
     highlight: true,
     tagline: "Para quem publica com frequência",
     bullets: [
-      "150 gerações por mês de ciclo",
-      "Até 3 imagens por geração",
       "Funcionalidades padrão completas",
       "Suporte prioritário básico",
     ],
@@ -72,8 +69,6 @@ export const PLAN_CATALOG: PlanCatalogEntry[] = [
     yearlySavingsLabel: "~17% vs mensal",
     tagline: "Equipes e volume",
     bullets: [
-      "500 gerações por mês de ciclo",
-      "Até 5 imagens por geração",
       "Maior prioridade nas gerações",
       "Suporte prioritário",
       "Base para recursos empresariais futuros",
