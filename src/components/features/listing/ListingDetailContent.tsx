@@ -23,15 +23,22 @@ import {
   ListingExportToolbar,
 } from "@/components/features/listing/ListingExportToolbar";
 import { ListingQualityFeedback } from "@/components/features/listing/ListingQualityFeedback";
+import { ListingStoreMetaPanel } from "@/components/features/listing/ListingStoreMetaPanel";
+import { ProductImageGallery } from "@/components/features/listing/ProductImageGallery";
 import type { QualityIssueTag } from "@/domains/listing/quality-feedback";
+import type { MarketplaceId } from "@/domains/marketplace/types";
+import { marketplaceLabel } from "@/domains/marketplace/types";
+import { Badge } from "@/components/ui/badge";
 
 type Props = {
   listingId: string;
+  marketplace: MarketplaceId;
   productName: string;
   categorySlug: string;
   categoryLabel: string;
   createdAtLabel: string;
   sellerNotes: string | null;
+  imageUrls: string[];
   initialOutput: ListingAiOutput;
   qualityFeedbackTags?: QualityIssueTag[];
   qualityFeedbackNotes?: string | null;
@@ -92,11 +99,13 @@ function outputFromDraft(
 
 export function ListingDetailContent({
   listingId,
+  marketplace,
   productName,
   categorySlug,
   categoryLabel,
   createdAtLabel,
   sellerNotes,
+  imageUrls,
   initialOutput,
   qualityFeedbackTags = [],
   qualityFeedbackNotes = null,
@@ -163,8 +172,11 @@ export function ListingDetailContent({
             ← Histórico
           </Link>
           <h1 className="text-2xl font-semibold tracking-tight">{displayTitle}</h1>
-          <p className="text-muted-foreground text-sm">
-            {productName} · {categoryLabel} · {createdAtLabel}
+          <p className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
+            <Badge variant="secondary">{marketplaceLabel(marketplace)}</Badge>
+            <span>
+              {productName} · {categoryLabel} · {createdAtLabel}
+            </span>
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -196,6 +208,7 @@ export function ListingDetailContent({
             </Button>
           )}
           <ListingExportToolbar
+            marketplace={marketplace}
             productName={productName}
             categorySlug={categorySlug}
             categoryLabel={categoryLabel}
@@ -203,6 +216,12 @@ export function ListingDetailContent({
           />
         </div>
       </div>
+
+      <ProductImageGallery imageUrls={imageUrls} productName={productName} />
+
+      {marketplace === "loja_propria" && output.export_meta ? (
+        <ListingStoreMetaPanel storeMeta={output.export_meta} />
+      ) : null}
 
       {sellerNotes ? (
         <Card className="border-dashed">

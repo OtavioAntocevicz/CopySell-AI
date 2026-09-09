@@ -45,6 +45,7 @@ import type { AdminUserWithLimits } from "@/server/admin/queries";
 const FILTER_ALL = "all";
 const BLOCKED_FILTER_BLOCKED = "blocked";
 const BLOCKED_FILTER_NOT = "not_blocked";
+const PAGE_SIZE = 25;
 
 function shortIso(iso: string): string {
   if (!iso) return "-";
@@ -162,6 +163,7 @@ export function AdminUsersTable({ users }: { users: AdminUserWithLimits[] }) {
   const [planFilter, setPlanFilter] = useState(FILTER_ALL);
   const [subFilter, setSubFilter] = useState(FILTER_ALL);
   const [blockedFilter, setBlockedFilter] = useState(FILTER_ALL);
+  const [page, setPage] = useState(0);
 
   const uniquePlans = useMemo(
     () => [...new Set(users.map((u) => u.plan_id))].sort(),
@@ -192,6 +194,17 @@ export function AdminUsersTable({ users }: { users: AdminUserWithLimits[] }) {
     });
   }, [users, searchQuery, roleFilter, planFilter, subFilter, blockedFilter]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const paginatedUsers = filteredUsers.slice(
+    safePage * PAGE_SIZE,
+    safePage * PAGE_SIZE + PAGE_SIZE,
+  );
+
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery, roleFilter, planFilter, subFilter, blockedFilter]);
+
   const highlightHidden =
     Boolean(highlightId) &&
     users.some((u) => u.id === highlightId) &&
@@ -203,6 +216,7 @@ export function AdminUsersTable({ users }: { users: AdminUserWithLimits[] }) {
     setPlanFilter(FILTER_ALL);
     setSubFilter(FILTER_ALL);
     setBlockedFilter(FILTER_ALL);
+    setPage(0);
   }
 
   useEffect(() => {
@@ -367,7 +381,10 @@ export function AdminUsersTable({ users }: { users: AdminUserWithLimits[] }) {
             </Select>
           </div>
           <p className="text-muted-foreground w-full text-xs lg:ml-auto lg:w-auto lg:shrink-0 lg:self-end lg:pb-2 lg:text-right">
-            Mostrando {filteredUsers.length} de {users.length}
+            {filteredUsers.length} de {users.length} usuário(s)
+            {filteredUsers.length > PAGE_SIZE
+              ? ` · página ${safePage + 1}/${totalPages}`
+              : ""}
           </p>
         </div>
 
@@ -389,7 +406,7 @@ export function AdminUsersTable({ users }: { users: AdminUserWithLimits[] }) {
         ) : (
           <>
             <div className="grid gap-3 lg:hidden">
-              {filteredUsers.map((u) => {
+              {paginatedUsers.map((u) => {
                 const blocked = Boolean(u.blocked_at);
                 return (
                   <Card
@@ -493,7 +510,7 @@ export function AdminUsersTable({ users }: { users: AdminUserWithLimits[] }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredUsers.map((u) => {
+                    {paginatedUsers.map((u) => {
                       const blocked = Boolean(u.blocked_at);
                       const rowHighlight =
                         ringUserId === u.id ? "bg-primary/5" : "";
@@ -565,6 +582,40 @@ export function AdminUsersTable({ users }: { users: AdminUserWithLimits[] }) {
                 </table>
               </div>
             </div>
+
+            {totalPages > 1 ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <p className="text-muted-foreground text-xs">
+                  Exibindo {safePage * PAGE_SIZE + 1}–
+                  {Math.min((safePage + 1) * PAGE_SIZE, filteredUsers.length)} de{" "}
+                  {filteredUsers.length}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className={cn(
+                      buttonVariants({ variant: "outline", size: "sm" }),
+                    )}
+                    disabled={safePage <= 0}
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(
+                      buttonVariants({ variant: "outline", size: "sm" }),
+                    )}
+                    disabled={safePage >= totalPages - 1}
+                    onClick={() =>
+                      setPage((p) => Math.min(totalPages - 1, p + 1))
+                    }
+                  >
+                    Próxima
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </>
         )}
       </div>

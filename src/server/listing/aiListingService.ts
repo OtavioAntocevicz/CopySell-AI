@@ -3,24 +3,17 @@
 import { createHash } from "crypto";
 import { ZodError } from "zod";
 import type { MarketplaceId } from "@/domains/marketplace/types";
-import { getListingConstraints } from "@/domains/marketplace/registry";
+import { getListingConstraints, isMarketplaceAvailable } from "@/domains/marketplace/registry";
 import {
-  listingAiOutputSchema,
   type ListingAiOutput,
   type GenerateListingFormInput,
+  outputSchemaForMarketplace,
 } from "@/domains/listing/schemas";
 import { categoryLabel } from "@/lib/categoryLabels";
-import {
-  DEFAULT_GEMINI_MODEL,
-  MAX_IMAGE_BYTES,
-  PROMPT_VERSION_ML_V3,
-} from "@/lib/constants";
+import { DEFAULT_GEMINI_MODEL, MAX_IMAGE_BYTES } from "@/lib/constants";
 import { logServerInfo, logServerWarn } from "@/lib/logger";
 import { generateListingJson } from "@/server/ai/gemini";
-import {
-  SYSTEM_ML_LISTING_V3,
-  buildUserPayload,
-} from "@/server/ai/prompts/mercado-livre-v3";
+import { getPromptConfig } from "@/server/ai/prompts";
 import { createClient } from "@/server/supabase/server";
 import {
   uploadProductImage,
@@ -29,7 +22,7 @@ import {
 import { semanticPostProcess } from "@/server/listing/semantic/semantic-post-process";
 import {
   canUserGenerate,
-  incrementUsageAfterSuccessfulGeneration,
+  consumeGenerationAtomically,
 } from "@/server/usage/usage-service";
 
 function normalizeListingOutput(
@@ -63,14 +56,17 @@ export type GenerateListingParams = {
   marketplace: MarketplaceId;
   productName: string;
   category: GenerateListingFormInput["category"];
-  /** Texto livre do vendedor com detalhes extras do produto (opcional). */
   sellerNotes?: string;
-  imageFile: File;
+  imageFiles: File[];
 };
 
 export async function generateListingForUser(
   params: GenerateListingParams,
 ): Promise<{ listingId: string; output: ListingAiOutput }> {
+  if (!isMarketplaceAvailable(params.marketplace)) {
+    throw new Error("MARKETPLACE_UNAVAILABLE");
+  }
+
   const supabase = await createClient();
   const gate = await canUserGenerate(supabase, params.userId);
   if (!gate.allowed) {
@@ -81,27 +77,51 @@ export async function generateListingForUser(
     throw new Error("SUBSCRIPTION_INACTIVE");
   }
 
+  const maxImages = Math.min(
+    gate.limits.maxImagesPerGeneration,
+    params.imageFiles.length,
+  );
+  if (maxImages < 1) {
+    throw new Error("IMAGE_REQUIRED");
+  }
+
+  const files = params.imageFiles.slice(0, maxImages);
   const maxBytes = Math.min(MAX_IMAGE_BYTES, gate.limits.maxImageBytes);
-  if (params.imageFile.size > maxBytes) {
-    throw new Error("IMAGE_TOO_LARGE");
+  for (const file of files) {
+    if (file.size > maxBytes) {
+      throw new Error("IMAGE_TOO_LARGE");
+    }
   }
 
   const constraints = getListingConstraints(params.marketplace);
   const categoryPt = categoryLabel(params.category);
   const modelName = process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL;
+  const promptConfig = getPromptConfig(params.marketplace);
+  const outputSchema = outputSchemaForMarketplace(params.marketplace);
 
-  let meta: UploadedImageMeta | null = null;
+  const uploaded: UploadedImageMeta[] = [];
+  const imageParts: { mimeType: string; base64: string }[] = [];
   let imageSha256 = "";
 
   try {
-    meta = await uploadProductImage(params.userId, params.imageFile);
-    const buf = Buffer.from(await params.imageFile.arrayBuffer());
-    imageSha256 = createHash("sha256").update(buf).digest("hex");
-    const base64 = buf.toString("base64");
-    const imagePart = { mimeType: meta.mime, base64 };
+    for (const file of files) {
+      const meta = await uploadProductImage(params.userId, file);
+      uploaded.push(meta);
+      const buf = Buffer.from(await file.arrayBuffer());
+      if (!imageSha256) {
+        imageSha256 = createHash("sha256").update(buf).digest("hex");
+      }
+      imageParts.push({
+        mimeType: meta.mime,
+        base64: buf.toString("base64"),
+      });
+    }
+
+    const primary = uploaded[0]!;
+    const extraPaths = uploaded.slice(1).map((m) => m.path);
 
     const runOnce = async (repairHint?: string) => {
-      const userText = buildUserPayload({
+      const userText = promptConfig.buildUserText({
         marketplace: params.marketplace,
         productName: params.productName,
         categoryLabel: categoryPt,
@@ -110,19 +130,19 @@ export async function generateListingForUser(
         repairHint,
       });
       const { rawText } = await generateListingJson({
-        systemInstruction: SYSTEM_ML_LISTING_V3,
+        systemInstruction: promptConfig.systemInstruction,
         userText,
-        image: imagePart,
+        images: imageParts,
       });
 
       let parsedJson: unknown;
       try {
         parsedJson = parseListingJson(rawText);
       } catch {
-        return listingAiOutputSchema.safeParse(null);
+        return outputSchema.safeParse(null);
       }
 
-      const first = listingAiOutputSchema.safeParse(parsedJson);
+      const first = outputSchema.safeParse(parsedJson);
       if (!first.success) {
         return first;
       }
@@ -138,7 +158,7 @@ export async function generateListingForUser(
           maxTitleLength: constraints.maxTitleLength,
         },
       );
-      return listingAiOutputSchema.safeParse(semanticallyCleaned);
+      return outputSchema.safeParse(semanticallyCleaned);
     };
 
     let parsed = await runOnce();
@@ -159,10 +179,12 @@ export async function generateListingForUser(
         productName: params.productName,
         category: params.category,
         sellerNotes: params.sellerNotes,
-        imagePath: meta.path,
-        imageMime: meta.mime,
+        imagePath: primary.path,
+        imageMime: primary.mime,
+        imagePaths: extraPaths,
         imageSha256,
         model: modelName,
+        promptVersion: promptConfig.promptVersion,
         errorCode: "AI_OUTPUT_INVALID",
       });
       throw new Error("AI_OUTPUT_INVALID");
@@ -175,33 +197,43 @@ export async function generateListingForUser(
       productName: params.productName,
       category: params.category,
       sellerNotes: params.sellerNotes,
-      imagePath: meta.path,
-      imageMime: meta.mime,
+      imagePath: primary.path,
+      imageMime: primary.mime,
+      imagePaths: extraPaths,
       imageSha256,
       output,
       model: modelName,
+      promptVersion: promptConfig.promptVersion,
     });
 
-    await incrementUsageAfterSuccessfulGeneration(supabase, params.userId);
+    await consumeGenerationAtomically(
+      supabase,
+      params.userId,
+      files.length,
+    );
 
     logServerInfo("listing_generated", {
       listingId,
       userId: params.userId,
       marketplace: params.marketplace,
-      promptVersion: PROMPT_VERSION_ML_V3,
+      promptVersion: promptConfig.promptVersion,
+      imageCount: files.length,
     });
 
     return { listingId, output };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    const primary = uploaded[0];
     if (
-      meta &&
+      primary &&
       imageSha256 &&
       message !== "AI_OUTPUT_INVALID" &&
       message !== "MONTHLY_LIMIT_REACHED" &&
       message !== "USER_BLOCKED" &&
       message !== "SUBSCRIPTION_INACTIVE" &&
-      message !== "EXTRA_CREDIT_DECREMENT_FAILED"
+      message !== "EXTRA_CREDIT_DECREMENT_FAILED" &&
+      message !== "RATE_LIMIT" &&
+      message !== "MARKETPLACE_UNAVAILABLE"
     ) {
       await persistFailedListing({
         userId: params.userId,
@@ -209,10 +241,12 @@ export async function generateListingForUser(
         productName: params.productName,
         category: params.category,
         sellerNotes: params.sellerNotes,
-        imagePath: meta.path,
-        imageMime: meta.mime,
+        imagePath: primary.path,
+        imageMime: primary.mime,
+        imagePaths: uploaded.slice(1).map((m) => m.path),
         imageSha256,
         model: modelName,
+        promptVersion: promptConfig.promptVersion,
         errorCode: "GEMINI_FAILED",
       });
     }
@@ -228,9 +262,11 @@ async function persistCompletedListing(args: {
   sellerNotes?: string;
   imagePath: string;
   imageMime: string;
+  imagePaths: string[];
   imageSha256: string;
   output: ListingAiOutput;
   model: string;
+  promptVersion: string;
 }): Promise<string> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -243,11 +279,12 @@ async function persistCompletedListing(args: {
       seller_notes: args.sellerNotes ?? null,
       image_path: args.imagePath,
       image_mime: args.imageMime,
+      image_paths: args.imagePaths,
       image_sha256: args.imageSha256,
       outputs: args.output,
       outputs_ai_snapshot: args.output,
       model: args.model,
-      prompt_version: PROMPT_VERSION_ML_V3,
+      prompt_version: args.promptVersion,
       status: "completed",
     })
     .select("id")
@@ -265,8 +302,10 @@ async function persistFailedListing(args: {
   sellerNotes?: string;
   imagePath: string;
   imageMime: string;
+  imagePaths: string[];
   imageSha256: string;
   model: string;
+  promptVersion: string;
   errorCode: string;
 }) {
   const supabase = await createClient();
@@ -278,10 +317,11 @@ async function persistFailedListing(args: {
     seller_notes: args.sellerNotes ?? null,
     image_path: args.imagePath,
     image_mime: args.imageMime,
+    image_paths: args.imagePaths,
     image_sha256: args.imageSha256,
     outputs: {},
     model: args.model,
-    prompt_version: PROMPT_VERSION_ML_V3,
+    prompt_version: args.promptVersion,
     status: "failed",
     error_code: args.errorCode,
   });

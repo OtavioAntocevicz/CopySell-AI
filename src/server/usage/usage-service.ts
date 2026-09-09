@@ -19,7 +19,7 @@ async function loadPlanLimits(
     .eq("id", planId)
     .maybeSingle();
   if (error) throw error;
-  return resolvePlanLimits(plan?.limits ?? {});
+  return resolvePlanLimits(plan?.limits ?? {}, planId as "free" | "pro" | "business");
 }
 
 function toBillingProfile(row: {
@@ -164,21 +164,21 @@ export async function canUserGenerate(
   return { allowed: true, limits, extraCredits };
 }
 
-export async function incrementUsageAfterSuccessfulGeneration(
+export async function consumeGenerationAtomically(
   supabase: SupabaseClient,
   userId: string,
-): Promise<void> {
+  imageCount: number,
+): Promise<"plan" | "credit"> {
   const { data: profile, error: pErr } = await supabase
     .from("profiles")
     .select(
-      "plan_id, subscription_status, billing_cycle_anchor_at, free_tier_ends_at, billing_interval, created_at",
+      "plan_id, billing_cycle_anchor_at, free_tier_ends_at, billing_interval, created_at",
     )
     .eq("id", userId)
     .maybeSingle();
   if (pErr) throw pErr;
   if (!profile) throw new Error("PROFILE_MISSING");
 
-  const limits = await loadPlanLimits(supabase, (profile.plan_id as string) ?? "free");
   const billing = toBillingProfile({
     plan_id: profile.plan_id as string,
     billing_cycle_anchor_at: profile.billing_cycle_anchor_at as string | null,
@@ -188,47 +188,28 @@ export async function incrementUsageAfterSuccessfulGeneration(
   });
   const { periodKey } = resolveCurrentUsagePeriod(billing);
 
-  const { data: usageRow, error: uErr } = await supabase
-    .from("user_usage_monthly")
-    .select("generations_completed")
-    .eq("user_id", userId)
-    .eq("period", periodKey)
-    .maybeSingle();
-  if (uErr) throw uErr;
-  const monthlyUsed = usageRow?.generations_completed ?? 0;
-
-  const subscriptionAllowsPlanQuota =
-    (profile.subscription_status as string) === "active";
-  const usePlanSlot =
-    subscriptionAllowsPlanQuota && monthlyUsed < limits.monthlyGenerations;
-
-  if (usePlanSlot) {
-    const { error } = await supabase.rpc("increment_own_usage", {
-      p_period: periodKey,
-      p_generations: 1,
-      p_images: 1,
-      p_listings: 1,
-    });
-    if (error) throw error;
-    return;
-  }
-
-  const { data: newBal, error: dErr } = await supabase.rpc(
-    "decrement_own_extra_credit",
-  );
-  if (dErr) throw dErr;
-  const bal = typeof newBal === "number" ? newBal : Number(newBal);
-  if (!Number.isFinite(bal) || bal < 0) {
-    throw new Error("EXTRA_CREDIT_DECREMENT_FAILED");
-  }
-
-  const { error: incErr } = await supabase.rpc("increment_own_usage", {
+  const { data, error } = await supabase.rpc("consume_generation_if_allowed", {
     p_period: periodKey,
-    p_generations: 0,
-    p_images: 1,
-    p_listings: 1,
+    p_images: imageCount,
   });
-  if (incErr) throw incErr;
+  if (error) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes("user blocked")) throw new Error("USER_BLOCKED");
+    if (msg.includes("subscription inactive")) {
+      throw new Error("SUBSCRIPTION_INACTIVE");
+    }
+    if (msg.includes("monthly limit")) throw new Error("MONTHLY_LIMIT_REACHED");
+    if (msg.includes("extra credit")) {
+      throw new Error("EXTRA_CREDIT_DECREMENT_FAILED");
+    }
+    throw error;
+  }
+
+  const source = String(data);
+  if (source !== "plan" && source !== "credit") {
+    throw new Error("USAGE_CONSUME_FAILED");
+  }
+  return source;
 }
 
 export type UsageSummary = {

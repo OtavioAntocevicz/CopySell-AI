@@ -20,17 +20,25 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { categoryOptions } from "@/lib/categoryLabels";
+import { MARKETPLACE_OPTIONS } from "@/domains/marketplace/types";
 import { generateListingAction } from "@/app/(dashboard)/dashboard/novo/actions";
 import { generateListingInitialState } from "@/app/(dashboard)/dashboard/novo/generateListingState";
 
-export function ListingForm({ disabled }: { disabled?: boolean }) {
+type Props = {
+  disabled?: boolean;
+  maxImages?: number;
+};
+
+export function ListingForm({ disabled, maxImages = 1 }: Props) {
   const router = useRouter();
   const [category, setCategory] = useState("");
+  const [marketplace, setMarketplace] = useState("mercado_livre");
   const [state, formAction, pending] = useActionState(
     generateListingAction,
     generateListingInitialState,
   );
   const formDisabled = pending || !!disabled;
+  const selectedChannel = MARKETPLACE_OPTIONS.find((o) => o.id === marketplace);
 
   useEffect(() => {
     if (state.ok) {
@@ -41,6 +49,7 @@ export function ListingForm({ disabled }: { disabled?: boolean }) {
   return (
     <form action={formAction} className="mx-auto flex max-w-lg flex-col gap-6">
       <input type="hidden" name="category" value={category} />
+      <input type="hidden" name="marketplace" value={marketplace} />
 
       {state.ok === false && state.error ? (
         <Alert variant="destructive">
@@ -48,6 +57,39 @@ export function ListingForm({ disabled }: { disabled?: boolean }) {
           <AlertDescription>{state.error}</AlertDescription>
         </Alert>
       ) : null}
+
+      <div className="space-y-2">
+        <Label htmlFor="marketplace-select">Onde você vai publicar?</Label>
+        <Select
+          value={marketplace}
+          onValueChange={(v) => setMarketplace(v ?? "mercado_livre")}
+          disabled={formDisabled}
+        >
+          <SelectTrigger id="marketplace-select" className="w-full">
+            <SelectValue placeholder="Selecione o canal" />
+          </SelectTrigger>
+          <SelectContent>
+            {MARKETPLACE_OPTIONS.map((o) => (
+              <SelectItem
+                key={o.id}
+                value={o.id}
+                disabled={!o.available}
+              >
+                {o.label}
+                {!o.available ? " (em breve)" : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {selectedChannel ? (
+          <p className="text-muted-foreground text-xs">{selectedChannel.description}</p>
+        ) : null}
+        {marketplace === "loja_propria" ? (
+          <p className="text-muted-foreground text-xs">
+            A IA também sugere slug, meta title, meta description e campos para SEO da sua loja.
+          </p>
+        ) : null}
+      </div>
 
       <div className="space-y-2">
         <Label htmlFor="productName">Nome do produto</Label>
@@ -98,17 +140,23 @@ export function ListingForm({ disabled }: { disabled?: boolean }) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="image">Imagem do produto</Label>
+        <Label htmlFor="images">
+          {maxImages > 1 ? "Imagens do produto" : "Imagem do produto"}
+        </Label>
         <Input
-          id="image"
-          name="image"
+          id="images"
+          name="images"
           type="file"
           accept="image/jpeg,image/png,image/webp"
           required
+          multiple={maxImages > 1}
           disabled={formDisabled}
         />
         <p className="text-muted-foreground text-xs">
-          JPEG, PNG ou WebP - máximo 2 MB.
+          JPEG, PNG ou WebP — máximo 2 MB cada.
+          {maxImages > 1
+            ? ` Selecione até ${maxImages} fotos (ângulos diferentes ajudam a IA).`
+            : null}
         </p>
       </div>
 
