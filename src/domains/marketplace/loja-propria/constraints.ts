@@ -11,21 +11,15 @@ export const lojaPropriaConstraints: ListingConstraints = {
   bulletCountMin: BULLET_MIN,
   bulletCountMax: BULLET_MAX,
   promptRulesBlock: `
-REGRAS ESPECÍFICAS — LOJA PRÓPRIA
+REGRAS ESPECÍFICAS — LOJA PRÓPRIA (MODO FACTUAL)
 
 OBJETIVO
 
-Gerar uma página de produto profissional para e-commerce próprio, adequada para plataformas como Shopify, WooCommerce, VTEX, Nuvemshop ou sistemas internos.
+Gerar uma página de produto profissional e factual para e-commerce próprio.
 
-A página deve combinar:
-- clareza comercial;
-- informação técnica;
-- SEO on-page;
-- escaneabilidade;
-- confiança;
-- intenção de compra.
+Priorize precisão sobre completude comercial.
 
-Não escreva apenas uma descrição curta. Gere conteúdo estruturado para uma página de produto.
+Não invente benefícios, aplicações ou especificações para enriquecer a página.
 
 TÍTULO
 
@@ -37,156 +31,110 @@ Campo: title
 - Não adicione especificações ausentes.
 - Não use adjetivos promocionais vazios.
 - Evite repetir palavras desnecessariamente.
-- O título deve ser compreensível para o comprador e útil para busca.
 
 DESCRIÇÃO CURTA
 
 Campo: short_description
 
-- Escreva um resumo comercial para card de vitrine ou área acima da dobra.
+- Resumo comercial direto e profissional.
 - Use de 2 a 4 frases objetivas.
-- Explique o que é o produto, para que serve e qual característica confirmada merece destaque.
+- Apenas informações confirmadas.
 - Não invente benefícios, aplicações ou especificações.
 - Não use markdown.
-- Evite repetir o título integralmente.
 
 DESCRIÇÃO LONGA
 
 Campo: long_description
 
-- Escreva uma descrição completa para a página de produto.
+- Descrição completa para a página de produto.
 - Use parágrafos curtos.
-- Apresente o produto de forma clara.
-- Explique benefícios práticos somente quando ligados a características confirmadas.
-- Inclua aplicações somente quando confirmadas ou quando forem contextos neutros e plausíveis da categoria.
-- Inclua especificações técnicas somente quando confirmadas.
-- Inclua conteúdo da embalagem e garantia somente quando confirmados.
+- Estrutura sugerida quando houver dados:
+  1. Apresentação do produto (nome, marca, categoria)
+  2. Características técnicas confirmadas
+  3. Materiais e acabamento visíveis
+  4. Itens inclusos (se visíveis)
+  5. Informações adicionais confirmadas
+- NÃO incluir seção de "benefícios" com inferências.
+- NÃO incluir aplicações ou contextos de uso não confirmados.
+- NÃO incluir preço, frete ou condições comerciais.
 - Não invente informações para preencher uma seção.
-- Não use markdown.
-- Não use listas com marcadores dentro da string.
-- Não repita a mesma informação em vários parágrafos.
-- Não transforme a descrição em texto institucional ou genérico.
-
-A descrição deve ser informativa e comercial, mas não deve parecer uma redação artificial.
+- Se faltarem dados, gere descrição menor — não complete com inferências.
 
 BULLETS
 
 Campo: bullets
 
 - Gere de ${BULLET_MIN} a ${BULLET_MAX} itens.
-- Cada item deve expressar uma única ideia.
-- Priorize atributos confirmados e seus benefícios práticos.
-- Use frases curtas e objetivas.
-- Comece com capitalização normal.
-- Não use markdown.
-- Não use listas internas.
-- Não repita o mesmo benefício em bullets diferentes.
-- Não invente especificações.
-- Não use adjetivos vazios.
+- Priorizar características técnicas e materiais visíveis confirmados.
+- NÃO inventar benefícios ou aplicações não confirmadas.
+- NÃO transformar características em promessas de desempenho.
+- Exemplo correto: "Potência de 2500W indicada no produto."
+- Exemplo incorreto: "Motor potente para limpeza profunda."
 - Não crie bullets apenas para preencher quantidade.
 
-Exemplo de estrutura:
-"[Característica confirmada] + [benefício prático relacionado]"
-
-KEYWORDS
+KEYWORDS FACTUAIS
 
 Campo: keywords
 
 - Gere de 8 a 20 termos.
-- Inclua o produto principal.
-- Inclua sinônimos naturais.
-- Inclua atributos confirmados.
-- Inclua aplicações confirmadas ou contexto neutro relevante.
-- Inclua marca e modelo quando confirmados.
-- Evite termos genéricos isolados.
-- Evite variações quase idênticas.
-- Não repita a mesma ideia com pequenas mudanças.
-- Não inclua atributos não confirmados.
-- Não use keywords de produtos semelhantes.
+- Apenas termos confirmados: nome do produto, marca, categoria, características técnicas visíveis.
+- NÃO incluir keywords de aplicação inferida (ex.: "limpeza profissional", "ideal para garagem").
+- NÃO incluir keywords de benefício inferido (ex.: "alta performance", "fácil transporte").
+- NÃO incluir atributos técnicos ausentes, termos promocionais ou características por inferência.
+- Exemplo proibido sem ficha técnica: "lavadora profissional", "limpeza pesada", "lavadora para lava-rápido".
+- Não use keyword stuffing.
+
+SEO FACTUAL
+
+Campo: export_meta
+
+- meta_title: entre 5 e 70 caracteres. Nome do produto + marca + categoria. Sem clickbait.
+- meta_description: entre 10 e 180 caracteres. Resumo factual do produto.
+- og_description: entre 10 e 220 caracteres. Descrição para compartilhamento social.
+- NÃO incluir promessas de desempenho ou aplicações inferidas no SEO.
+- NÃO use: "Perfeita para limpezas pesadas.", "Alta eficiência para uso profissional.", "Maior compatibilidade e durabilidade."
+- Prefira: "Conheça a Lavadora de Alta Pressão Tekna HL2500IPM PRO 2500W 220V."
+- O SEO deve ser claro e relevante, mas nunca mais criativo do que os dados disponíveis.
 
 SEO_SUGGESTIONS
 
 Campo: seo_suggestions
 
 - Gere de 5 a 12 sugestões práticas.
-- As sugestões devem ajudar o vendedor a melhorar a página.
-- Priorize:
-  - fotos adicionais;
-  - imagem de detalhes;
-  - ficha técnica;
-  - FAQ;
-  - informações de compatibilidade;
-  - conteúdo da embalagem;
-  - garantia;
-  - vídeo demonstrativo;
-  - organização da página;
-  - dados estruturados;
-  - links internos;
-  - clareza do título e H1.
-- Não invente que uma informação existe.
+- Priorize fotos adicionais, ficha técnica, FAQ, compatibilidade, conteúdo da embalagem, garantia.
 - Quando um dado estiver ausente, sugira confirmá-lo ou adicioná-lo.
-- Não escreva sugestões genéricas como "melhore o SEO" sem explicar como.
+- Não invente que uma informação existe.
 
-EXPORT_META
+NOTAS PARA O VENDEDOR
 
-Campo obrigatório: export_meta
+Campo: export_meta.notes_for_seller
 
-slug:
-- Derive do nome do produto.
-- Use apenas ASCII.
-- Use letras minúsculas, números e hífens.
-- Remova acentos.
-- Não use barras, espaços ou caracteres especiais.
-- Evite hífens duplicados.
-- O slug deve ter entre 3 e 120 caracteres.
-- Não inclua informações não confirmadas.
+- Mencionar APENAS lacunas reais de informação (ex.: "voltagem não visível", "capacidade não informada").
+- Exemplo: "Confirmar pressão máxima, vazão, tipo de motor, acessórios inclusos, peso e garantia antes da publicação."
+- NÃO sugerir adicionar benefícios inferidos.
+- NÃO sugerir adicionar aplicações ou contextos de uso.
+- NÃO sugerir adicionar promessas de desempenho.
+- Não invente os valores ausentes.
+- Não transforme uma sugestão de confirmação em informação do produto.
+- Se todas as informações visíveis foram utilizadas, retorne orientação curta ou array vazio conforme o schema.
 
-meta_title:
-- Entre 5 e 70 caracteres.
-- Deve ser claro, relevante e adequado para o título SEO.
-- Priorize produto, marca e modelo quando confirmados.
-- Não use keyword stuffing.
-- Não use promessas exageradas.
+EXPORT_META (obrigatório)
 
-meta_description:
-- Entre 10 e 180 caracteres.
-- Resuma o produto e seu principal diferencial confirmado.
-- Use linguagem natural.
-- Não invente especificações.
-- Não use promessas absolutas.
-
-h1_suggestion:
-- Entre 3 e 150 caracteres.
-- Deve ser um título claro para a página.
-- Pode ser semelhante ao title, mas não deve ser artificialmente diferente.
-- Não inclua atributos não confirmados.
-
-og_description:
-- Entre 10 e 220 caracteres.
-- Deve funcionar como descrição de compartilhamento.
-- Seja claro e comercial.
-- Não use hype vazio.
-- Não invente informações.
-
-notes_for_seller:
-- Forneça orientações práticas para publicação.
-- Aponte informações importantes que não foram confirmadas.
-- Sugira imagens, campos ou dados que deveriam ser adicionados.
-- Não invente dados do produto.
-- Não trate sugestões como fatos.
-- Se não houver pendências relevantes, informe uma orientação curta e útil.
+- Preencher TODOS os campos: slug, meta_title, meta_description, h1_suggestion, og_description, notes_for_seller.
+- slug: ASCII, minúsculas, kebab-case, 3 a 120 caracteres.
+- Não invente campos extras além do schema.
 
 REGRAS DE CONFIANÇA
 
 Informações explicitamente fornecidas no nome, nas notas do vendedor ou em dados estruturados podem ser usadas, desde que não entrem em conflito com as imagens.
 
-Características visuais evidentes podem ser descritas, mas não devem ser convertidas em especificações técnicas.
+Características visuais evidentes podem ser descritas, mas não devem ser convertidas em especificações técnicas nem promessas de desempenho.
 
 Se uma informação não estiver confirmada:
 - omita da copy;
 - não inclua nas keywords;
 - não inclua nos metadados;
-- quando for importante para a decisão de compra, mencione a necessidade de confirmação em notes_for_seller ou seo_suggestions.
+- quando for importante, mencione a necessidade de confirmação em notes_for_seller ou seo_suggestions.
 
 REGRAS DE REPARO
 
