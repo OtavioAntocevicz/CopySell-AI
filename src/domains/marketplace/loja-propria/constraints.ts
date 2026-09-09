@@ -5,53 +5,29 @@ import type { ListingConstraints } from "@/domains/marketplace/types";
 const BULLET_MIN = 4;
 const BULLET_MAX = 6;
 
+/** Checklist compacto — reforço por proximidade à tarefa. Doutrina em SYSTEM_LOJA_PROPRIA_V1. */
 export const lojaPropriaConstraints: ListingConstraints = {
   maxTitleLength: 120,
   bulletCountMin: BULLET_MIN,
   bulletCountMax: BULLET_MAX,
   promptRulesBlock: `
-Você é especialista em páginas de produto para LOJA PRÓPRIA (e-commerce / Shopify / WooCommerce / VTEX / Nuvemshop).
+CHECKLIST_LOJA_PROPRIA (reforço — regras completas no system):
 
-OBJETIVO:
-Gerar copy de produto otimizada para conversão, SEO on-page e publicação em loja virtual própria.
+Limites:
+- title: máx. 120 caracteres
+- bullets: ${BULLET_MIN} a ${BULLET_MAX}
+- keywords: 8 a 20
+- seo_suggestions: 5 a 12
+- export_meta.slug: 3-120 chars, kebab-case ASCII
+- export_meta.meta_title: até 70 caracteres
+- export_meta.meta_description: até 180 caracteres
+- export_meta.h1_suggestion: até 150 caracteres
+- export_meta.og_description: até 220 caracteres
+- export_meta.notes_for_seller: até 2000 caracteres
 
-TÍTULO (campo title):
-- Até 120 caracteres.
-- Claro, comercial e pesquisável.
-- Pode ser mais descritivo que marketplaces (marca + produto + diferencial).
+export_meta é OBRIGATÓRIO nesta resposta — nunca omita o objeto, mesmo que algum campo interno fique mais curto por falta de informação confirmada.
 
-DESCRIÇÃO CURTA:
-- Resumo escaneável para card de vitrine ou bloco acima da dobra.
-- 2–4 frases objetivas.
-
-DESCRIÇÃO LONGA:
-- Estrutura em parágrafos curtos.
-- Benefícios práticos + especificações confirmadas.
-- Tom profissional, sem hype vazio.
-
-BULLETS:
-- 4 a 6 itens.
-- Um benefício ou atributo por bullet.
-- Linguagem orientada à decisão de compra.
-
-KEYWORDS:
-- 8 a 20 termos para SEO interno e tags.
-- Inclua sinônimos e intenção de busca.
-
-SEO_SUGGESTIONS:
-- Dicas práticas para fotos, vídeo, FAQ, schema e vitrine.
-
-CAMPOS EXTRAS (export_meta — obrigatórios para loja própria):
-- slug: URL amigável em minúsculas, hífens, sem acentos (ex.: "fone-bluetooth-xyz-preto")
-- meta_title: título SEO ≤ 60 caracteres para <title>
-- meta_description: meta description ≤ 160 caracteres para Google
-- h1_suggestion: H1 da página de produto (pode ser igual ou ligeiramente diferente do title)
-- og_description: texto para Open Graph / compartilhamento social (≤ 200 caracteres)
-- notes_for_seller: observações práticas (ex.: campos customizados, variações, cuidados na publicação)
-
-REGRAS:
-- Slug sempre em ASCII, kebab-case, derivado do nome do produto.
-- meta_title e meta_description devem ser únicos e clicáveis, sem keyword stuffing.
-- Nunca invente especificações não confirmadas na imagem ou nas notas do vendedor.
+Nunca invente especificação não confirmada na imagem ou nas notas do vendedor — vale para todos os campos, inclusive dentro de export_meta.
+meta_title e meta_description devem ser únicos, clicáveis e sem keyword stuffing.
 `.trim(),
 };

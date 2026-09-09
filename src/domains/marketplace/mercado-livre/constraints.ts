@@ -6,53 +6,34 @@ const BULLET_MIN = 4;
 const BULLET_MAX = 6;
 
 /**
- * Regras orientativas para o modelo - alinhadas ao comportamento de busca e leitura em marketplaces.
- * Não substituem conformidade com os termos de uso da plataforma onde você publica.
+ * Checklist compacto injetado no user prompt — reforço por proximidade à tarefa.
+ * A doutrina completa está em SYSTEM_ML_LISTING_V3.
  */
 export const mercadoLivreConstraints: ListingConstraints = {
   maxTitleLength: 60,
   bulletCountMin: BULLET_MIN,
   bulletCountMax: BULLET_MAX,
   promptRulesBlock: `
-Você é especialista em anúncios que performam em marketplaces (Brasil).
+CHECKLIST_MERCADO_LIVRE (reforço — regras completas no system):
 
-OBJETIVO:
-Maximizar CTR (clique) e relevância de busca, com escaneabilidade no mobile e zero alucinação.
+Limites:
+- title: máx. 60 caracteres
+- bullets: ${BULLET_MIN} a ${BULLET_MAX}
+- keywords: 8 a 20
+- seo_suggestions: 5 a 12
 
-PROIBIDO (nunca use):
-- Adjetivos vagos/promoções: "ótima qualidade", "excelente", "imperdível", "lindo", "super", "perfeito", "garantido", "o melhor", "sem igual".
-- Promessas absolutas e exageros: "100%...", "garantimos...", "maior do Brasil".
-- Emojis e caracteres/símbolos chamativos em excesso (!!!, ***, ____).
-- Incluir números/especificações técnicas não verificáveis (voltagem, capacidade, dimensões, compatibilidades específicas, certificações).
+Nunca use (adjetivo/promoção vazia):
+"ótima qualidade" · "excelente" · "imperdível" · "lindo" · "super" · "perfeito" · "garantido" · "o melhor" · "sem igual"
 
-TÍTULO (até 60 caracteres):
-- Estrutura/ordem: [tipo do produto] + [marca/modelo se confirmados] + [atributo forte verificável] + [categoria/uso]
-- Termos mais buscados primeiro.
-- Evite caixa alta excessiva.
-- Se marca/modelo ou atributo não estiverem confirmados, omita.
+Nunca use (promessa/exagero):
+"100%..." · "garantimos..." · "maior do Brasil"
 
-DESCRIÇÃO CURTA:
-- 2-4 frases objetivas: para que serve, principal benefício e diferencial verificável (foto, nome ou sellerNotes).
+Nunca use:
+- Emojis e símbolos chamativos em excesso (!!!, ***, ____)
+- Números/specs técnicas não verificáveis (voltagem, capacidade, dimensões, compatibilidade específica, certificação)
 
-DESCRIÇÃO LONGA:
-- Estruture em parágrafos curtos.
-- Inclua especificações que o comprador espera na categoria (somente se visíveis ou confirmadas em sellerNotes).
-- Linguagem clara para conversão: foco em uso, aplicação e o que vem de forma dedutível.
-
-BULLETS (${BULLET_MIN}-${BULLET_MAX} itens):
-- Cada bullet deve ter 1 conceito (benefício + atributo verificável).
-- Comece com capitalização normal.
-- Sem markdown, sem listas internas.
-
-PALAVRAS-CHAVE:
-- 8 a 20 termos.
-- Método: termo principal + sinônimos naturais + variações populares + atributos pesquisáveis (quando visíveis ou confirmados).
-- Evite keyword stuffing e repetição artificial (não colocar a mesma ideia com palavras quase idênticas).
-- Inclua contexto de uso quando relevante para a categoria.
-
-SEO / VISIBILIDADE:
-- Sugira termos alternativos e sinônimos que realmente aparecem na busca interna do marketplace.
-- Evite repetir o título inteiro várias vezes.
-- SEO deve ser "densidade semântica": cobre variações e atributos esperados, sem redundância.
+Título — se marca/modelo/atributo não estiverem confirmados: omita, não substitua por termo genérico.
+Keywords — termo principal + sinônimos naturais + variações populares + atributos pesquisáveis (somente confirmados).
+SEO — cubra variações e atributos esperados da categoria; não repita o título inteiro várias vezes.
 `.trim(),
 };
