@@ -11,6 +11,25 @@ export function buildListingAiClipboardText(params: {
   const bullets = o.bullets.map((b) => `• ${b}`).join("\n");
   const keywords = o.keywords.join(", ");
   const seo = o.seo_suggestions.join("\n");
+  const meta = o.export_meta;
+  const storeBlock =
+    meta?.slug || meta?.meta_title
+      ? [
+          "",
+          "## SEO loja própria",
+          meta.slug ? `Slug: ${meta.slug}` : "",
+          meta.meta_title ? `Meta title: ${meta.meta_title}` : "",
+          meta.meta_description
+            ? `Meta description: ${meta.meta_description}`
+            : "",
+          meta.h1_suggestion ? `H1: ${meta.h1_suggestion}` : "",
+          meta.og_description ? `Open Graph: ${meta.og_description}` : "",
+          meta.notes_for_seller ? `Notas: ${meta.notes_for_seller}` : "",
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : "";
+
   return [
     `# ${o.title}`,
     "",
@@ -28,6 +47,7 @@ export function buildListingAiClipboardText(params: {
     "",
     "## Sugestões SEO",
     seo,
+    storeBlock,
     "",
     "---",
     `Produto base: ${params.productName}`,

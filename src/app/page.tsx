@@ -14,6 +14,8 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { LandingPlansSection } from "@/components/marketing/LandingPlansSection";
 import { loadPricingPlanRows } from "@/server/billing/load-pricing-plans";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "CopySell AI - Anúncios para marketplaces com IA",
   description:

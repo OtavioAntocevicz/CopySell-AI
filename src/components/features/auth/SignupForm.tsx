@@ -39,6 +39,21 @@ export function SignupForm() {
   const [info, setInfo] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
+  async function signUpWithGoogle() {
+    setError(null);
+    setInfo(null);
+    setPending(true);
+    const supabase = createClient();
+    const { error: oauthErr } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+      },
+    });
+    setPending(false);
+    if (oauthErr) setError(oauthErr.message);
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
@@ -207,6 +222,23 @@ export function SignupForm() {
       </div>
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Criando conta…" : "Criar conta"}
+      </Button>
+      <div className="relative my-1">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background text-muted-foreground px-2">ou</span>
+        </div>
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        disabled={pending}
+        className="w-full"
+        onClick={() => void signUpWithGoogle()}
+      >
+        Continuar com Google
       </Button>
       <p className="text-muted-foreground text-center text-xs leading-relaxed">
         Ao criar sua conta, você concorda com os{" "}

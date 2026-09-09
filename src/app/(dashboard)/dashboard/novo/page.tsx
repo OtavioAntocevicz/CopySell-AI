@@ -42,6 +42,7 @@ export default async function NovoAnuncioPage() {
   const usage = await getUsageSummaryForUser(supabase, user.id);
   const monthlyUsed = usage?.monthlyUsed ?? 0;
   const monthlyCap = usage?.monthlyCap ?? 0;
+  const extraCredits = usage?.extraCredits ?? 0;
   const maxImageBytes = usage?.maxImageBytes ?? 2097152;
   const maxImages = usage?.maxImagesPerGeneration ?? 1;
 
@@ -53,9 +54,15 @@ export default async function NovoAnuncioPage() {
 
   const blocked = Boolean(profileRow?.blocked_at);
   const subscriptionOk = profileRow?.subscription_status === "active";
-
   const atMonthlyLimit = monthlyCap > 0 && monthlyUsed >= monthlyCap;
-  const disabled = blocked || !subscriptionOk || atMonthlyLimit;
+  const canUseExtraCredits = atMonthlyLimit && extraCredits > 0;
+  const canUseCreditsWhenInactive =
+    !subscriptionOk && extraCredits > 0 && !blocked;
+
+  const disabled =
+    blocked ||
+    (!subscriptionOk && extraCredits <= 0) ||
+    (atMonthlyLimit && extraCredits <= 0);
 
   return (
     <div className="space-y-8">
@@ -63,8 +70,8 @@ export default async function NovoAnuncioPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Novo anúncio</h1>
           <p className="text-muted-foreground text-sm">
-            Envie a foto, dados básicos e, se quiser, detalhes extras - a IA usa
-            tudo isso para gerar texto otimizado para marketplaces.
+            Escolha o canal (Mercado Livre ou loja própria), envie foto(s) e dados
+            básicos — a IA gera copy otimizada para cada destino.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -92,7 +99,7 @@ export default async function NovoAnuncioPage() {
         </Alert>
       ) : null}
 
-      {!blocked && !subscriptionOk ? (
+      {!blocked && !subscriptionOk && !canUseCreditsWhenInactive ? (
         <Alert variant="destructive">
           <AlertTitle>Assinatura inativa</AlertTitle>
           <AlertDescription className="space-y-2">
@@ -101,7 +108,7 @@ export default async function NovoAnuncioPage() {
               <span className="font-medium">
                 {profileRow?.subscription_status ?? "-"}
               </span>
-              ). Escolha um plano pago para continuar.
+              ). Escolha um plano pago ou compre créditos extras para continuar.
             </p>
             <Link
               href="/dashboard/planos"
@@ -113,7 +120,18 @@ export default async function NovoAnuncioPage() {
         </Alert>
       ) : null}
 
-      {subscriptionOk && atMonthlyLimit ? (
+      {canUseCreditsWhenInactive ? (
+        <Alert>
+          <AlertTitle>Usando créditos extras</AlertTitle>
+          <AlertDescription>
+            Sua assinatura está inativa, mas você tem{" "}
+            <span className="font-medium">{extraCredits}</span> crédito(s) extra(s)
+            disponível(is) para gerar anúncios.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {subscriptionOk && atMonthlyLimit && !canUseExtraCredits ? (
         <Alert variant="destructive">
           <AlertTitle>Limite do ciclo atingido</AlertTitle>
           <AlertDescription className="space-y-2">
@@ -132,14 +150,34 @@ export default async function NovoAnuncioPage() {
         </Alert>
       ) : null}
 
-      {subscriptionOk && !blocked && !atMonthlyLimit ? (
+      {canUseExtraCredits ? (
+        <Alert>
+          <AlertTitle>Limite do plano atingido — créditos extras</AlertTitle>
+          <AlertDescription>
+            Você usou {monthlyUsed}/{monthlyCap} gerações do plano neste ciclo.
+            Ainda restam{" "}
+            <span className="font-medium">{extraCredits}</span> crédito(s) extra(s)
+            (não expiram) para continuar gerando.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {!disabled ? (
         <p className="text-muted-foreground text-sm">
-          Uso no ciclo atual:{" "}
+          Uso no ciclo:{" "}
           <span className="text-foreground font-medium">
             {monthlyUsed}/{monthlyCap}
           </span>{" "}
-          gerações · até {maxImages} imagem(ns) por geração · imagem até{" "}
-          {formatBytes(maxImageBytes)} · renovação do ciclo:{" "}
+          gerações
+          {extraCredits > 0 ? (
+            <>
+              {" "}
+              · <span className="font-medium">{extraCredits}</span> crédito(s)
+              extra(s)
+            </>
+          ) : null}{" "}
+          · até {maxImages} imagem(ns) por geração · imagem até{" "}
+          {formatBytes(maxImageBytes)} · renovação:{" "}
           {usage ? formatDate(usage.periodEndsAt) : "-"}.
         </p>
       ) : null}
@@ -150,11 +188,14 @@ export default async function NovoAnuncioPage() {
         <CardHeader>
           <CardTitle>Dados do produto</CardTitle>
           <CardDescription>
-            Formatos aceitos: JPEG, PNG ou WebP até {formatBytes(maxImageBytes)}.
+            Formatos: JPEG, PNG ou WebP até {formatBytes(maxImageBytes)} cada.
+            {maxImages > 1
+              ? ` Envie até ${maxImages} imagens por geração.`
+              : " Uma imagem por geração no seu plano."}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ListingForm disabled={disabled} />
+          <ListingForm disabled={disabled} maxImages={maxImages} />
         </CardContent>
       </Card>
     </div>

@@ -5,12 +5,13 @@ import { Copy, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { ListingAiOutput } from "@/domains/listing/schemas";
+import type { MarketplaceId } from "@/domains/marketplace/types";
 import { getMarketplaceExporter } from "@/domains/marketplace/registry";
 import { rowsToCsv } from "@/lib/csv";
-import { ML_CSV_EXPORT_LAYOUT_VERSION } from "@/domains/marketplace/mercado-livre/export";
 import { buildListingAiClipboardText } from "@/lib/listing-clipboard-text";
 
 type Props = {
+  marketplace: MarketplaceId;
   productName: string;
   categorySlug: string;
   categoryLabel: string;
@@ -27,7 +28,10 @@ async function copyText(label: string, text: string) {
 }
 
 export function ListingExportToolbar(props: Props) {
-  const exporter = useMemo(() => getMarketplaceExporter("mercado_livre"), []);
+  const exporter = useMemo(
+    () => getMarketplaceExporter(props.marketplace),
+    [props.marketplace],
+  );
 
   const csvBlobUrl = useMemo(() => {
     const row = exporter.toRow({
@@ -38,6 +42,7 @@ export function ListingExportToolbar(props: Props) {
       longDescription: props.output.long_description,
       bullets: props.output.bullets,
       keywords: props.output.keywords,
+      storeMeta: props.output.export_meta,
     });
     const csv = rowsToCsv(exporter.headers(), [row]);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
@@ -51,10 +56,10 @@ export function ListingExportToolbar(props: Props) {
   const downloadCsv = useCallback(() => {
     const a = document.createElement("a");
     a.href = csvBlobUrl;
-    a.download = `copysell-anuncio-${ML_CSV_EXPORT_LAYOUT_VERSION}.csv`;
+    a.download = `copysell-anuncio-${exporter.exportLayoutVersion}.csv`;
     a.click();
     toast.success("CSV gerado");
-  }, [csvBlobUrl]);
+  }, [csvBlobUrl, exporter.exportLayoutVersion]);
 
   const copyAll = useCallback(() => {
     void copyText(

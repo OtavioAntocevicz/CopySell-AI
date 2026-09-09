@@ -6,16 +6,28 @@ import { PLAN_CATALOG } from "@/server/billing/catalog";
 import { resolvePlanLimits } from "@/server/usage/plan-limits";
 
 export async function loadPricingPlanRows(): Promise<PricingPlanRow[]> {
-  const supabase = createPublicSupabaseClient();
-  const { data: rows } = await supabase
-    .from("plans")
-    .select("id, name, description, limits, display_order")
-    .eq("active", true)
-    .order("display_order", { ascending: true });
+  let rows: Array<{
+    id: string;
+    name: string | null;
+    description: string | null;
+    limits: unknown;
+  }> = [];
+
+  try {
+    const supabase = createPublicSupabaseClient();
+    const { data } = await supabase
+      .from("plans")
+      .select("id, name, description, limits, display_order")
+      .eq("active", true)
+      .order("display_order", { ascending: true });
+    rows = data ?? [];
+  } catch {
+    rows = [];
+  }
 
   return PLAN_CATALOG.map((c) => {
     const row = (rows ?? []).find((r) => r.id === c.id);
-    const lim = resolvePlanLimits(row?.limits ?? {});
+    const lim = resolvePlanLimits(row?.limits ?? {}, c.id);
     return {
       id: c.id,
       name: row?.name ?? c.id,

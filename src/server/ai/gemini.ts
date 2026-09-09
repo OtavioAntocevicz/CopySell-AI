@@ -27,10 +27,12 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export type GeminiImagePart = { mimeType: string; base64: string };
+
 export type GeminiListingCallParams = {
   systemInstruction: string;
   userText: string;
-  image: { mimeType: string; base64: string };
+  images: GeminiImagePart[];
 };
 
 function getModelName() {
@@ -68,20 +70,19 @@ export async function generateListingJson(
     const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
 
     try {
+      const imageParts = params.images.map((img) => ({
+        inlineData: {
+          mimeType: img.mimeType,
+          data: img.base64,
+        },
+      }));
+
       const result = await model.generateContent(
         {
           contents: [
             {
               role: "user",
-              parts: [
-                { text: params.userText },
-                {
-                  inlineData: {
-                    mimeType: params.image.mimeType,
-                    data: params.image.base64,
-                  },
-                },
-              ],
+              parts: [{ text: params.userText }, ...imageParts],
             },
           ],
         },
