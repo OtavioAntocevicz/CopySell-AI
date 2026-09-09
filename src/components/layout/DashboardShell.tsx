@@ -13,6 +13,7 @@ import {
   ChevronRight,
   CreditCard,
   History,
+  KeyRound,
   LayoutDashboard,
   MessageSquareText,
   PlusCircle,
@@ -88,6 +89,11 @@ const adminNav: NavItem[] = [
     href: "/admin/ia",
     label: "IA & edição",
     icon: <Sparkles className="size-4 shrink-0" />,
+  },
+  {
+    href: "/admin/gemini-key",
+    label: "Chave Gemini",
+    icon: <KeyRound className="size-4 shrink-0" />,
   },
   {
     href: "/admin/users",
