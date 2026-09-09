@@ -22,8 +22,14 @@ export const GEMINI_TRANSIENT_RETRY_BASE_MS = 1_200;
 /** Modelo padrão na API atual (google.ai.dev); 1.5 foi removido do v1beta para várias chaves. */
 export const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 
-export const PROMPT_VERSION_ML_V3 = "ml-v3";
-export const PROMPT_VERSION_LOJA_V1 = "loja-v1";
+export const PROMPT_VERSION_ML_V4 = "ml-v4";
+export const PROMPT_VERSION_LOJA_V2 = "loja-v2";
+
+/** @deprecated Use PROMPT_VERSION_ML_V4 */
+export const PROMPT_VERSION_ML_V3 = PROMPT_VERSION_ML_V4;
+
+/** @deprecated Use PROMPT_VERSION_LOJA_V2 */
+export const PROMPT_VERSION_LOJA_V1 = PROMPT_VERSION_LOJA_V2;
 
 /** Intervalo mínimo entre gerações consecutivas (ms) por usuário. */
 export const GENERATION_RATE_LIMIT_MS = 15_000;
