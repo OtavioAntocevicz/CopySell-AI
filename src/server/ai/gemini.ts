@@ -8,6 +8,7 @@ import {
   GEMINI_TRANSIENT_RETRY_BASE_MS,
 } from "@/lib/constants";
 import { logServerError, logServerInfo, logServerWarn } from "@/lib/logger";
+import { resolveGeminiApiKey } from "@/server/secrets/gemini-api-key";
 
 function isTransientGeminiFailure(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
@@ -42,7 +43,7 @@ function getModelName() {
 export async function generateListingJson(
   params: GeminiListingCallParams,
 ): Promise<{ rawText: string }> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = await resolveGeminiApiKey();
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY_MISSING");
   }
